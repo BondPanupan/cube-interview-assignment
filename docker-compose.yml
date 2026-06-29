@@ -1,0 +1,39 @@
+services:
+  app:
+    build: .
+    command: pnpm dev
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@db:5432/product_health_take_home
+      NODE_OPTIONS: --max-old-space-size=256
+    ports:
+      - '3000:3000'
+    mem_limit: 512m
+    cpus: 1
+    restart: unless-stopped
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: product_health_take_home
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5433:5432'
+    volumes:
+      - product_health_db:/var/lib/postgresql/data
+      - ./db:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d product_health_take_home']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  product_health_db:
