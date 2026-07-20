@@ -94,7 +94,6 @@ AI is allowed. Explain what you used it for and what you manually reviewed.
   - [ `DONE` ] Write `ARCHITECTURE.md` for the whole system using `SYSTEM_CONTEXT.md`.
 
 ## Deliverables
-### explaining what you did, why, and how you verified it: `บันทึกใน README อธิบายว่าคุณทำอะไร ทำไม และตรวจสอบยืนยันผลลัพธ์อย่างไร`
 ### Explain what I did step by step.
   - forked from Card-Nattanon-Card-Card-Card-Card-Card/cube-interview-assignment
   - clone the repository
@@ -107,8 +106,42 @@ AI is allowed. Explain what you used it for and what you manually reviewed.
     - file structure, database design, application design, components of applicaiton, api,
   - reproduced the problem make it crash/restart the app container
   - Analyze and find solutions.
+    - Choose to create a notification system.
+    - Export to Background Job
+    - Client → Click Export → API creates Job → Processes in Background → Once complete, a notification will appear with a download link.
   - fix(project structure): separate the api of application, Manage the structure of module and domain
   - new feature export: CSV Stream + Cursor Pagination + Batch 1000 and Background Job
   - refactor export: back export job status with a Postgres + TS enum
   - refactor export: share type helper function and app structure
   - add ARCHITECTURE.md
+
+### how verified
+  - 500,000 rows is a volume that makes it difficult to verify.
+  - Row count check
+  - Column count consistency
+  - Sample row inspection
+  - File size sanity check, with 500K If it's unusually small or large, there's a problem.
+
+<br/>
+
+## This is what I instructed the AI ​​to do. for agents on Cli
+```
+CSV Stream + Cursor Pagination + Batch 1000
+Export to Background Job
+Client → Click Export → API creates Job → Processes in Background → Notifies and provides Download link when finished
+On frontend, I need a notification UI.
+Click on the notification menu to show a popup modal listing notifications.
+Click each notification to download a file.
+
+Client clicks Export
+  - API creates Job (responds immediately, no waiting)
+  - Background retrieves data 1000 rows at a time
+  - Stream writes CSV to /tmp/export-xxx.csv
+  - Notifies Client when finished → Click Download
+```
+
+## Notifications ui
+![Warehouses](ex-images/01-notifications.png)
+
+## Notifications Export list ui
+![Warehouses](ex-images/02-list-of-notifications.png)
