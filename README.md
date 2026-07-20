@@ -107,7 +107,7 @@ AI is allowed. Explain what you used it for and what you manually reviewed.
   - reproduced the problem make it crash/restart the app container
   - Analyze and find solutions.
     - Choose to create a notification system.
-    - Export to Background Job
+    - Export to Background Job, `Fire and forget`: the export streams to disk
     - Client → Click Export → API creates Job → Processes in Background → Once complete, a notification will appear with a download link.
   - fix(project structure): separate the api of application, Manage the structure of module and domain
   - new feature export: CSV Stream + Cursor Pagination + Batch 1000 and Background Job
