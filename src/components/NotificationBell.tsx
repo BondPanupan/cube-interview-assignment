@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import type { ExportJob } from '@/lib/export-jobs';
+import { ExportJobStatus } from '@/lib/export-job-status';
 import { downloadExportJob } from '@/lib/product-health/export';
 
 type Props = {
@@ -24,7 +25,7 @@ export function NotificationBell({ jobs }: Props) {
   }
 
   function handleSelect(job: ExportJob) {
-    if (job.status !== 'completed') return;
+    if (job.status !== ExportJobStatus.Completed) return;
     downloadExportJob(job);
   }
 
@@ -66,7 +67,7 @@ export function NotificationBell({ jobs }: Props) {
                     type="button"
                     className="notif-item-button"
                     onClick={() => handleSelect(job)}
-                    disabled={job.status !== 'completed'}
+                    disabled={job.status !== ExportJobStatus.Completed}
                   >
                     <span className="notif-item-title">
                       {job.fileName ?? `Export #${job.id}`}
@@ -85,13 +86,13 @@ export function NotificationBell({ jobs }: Props) {
 
 function describeStatus(job: ExportJob): string {
   switch (job.status) {
-    case 'pending':
+    case ExportJobStatus.Pending:
       return 'Queued...';
-    case 'processing':
+    case ExportJobStatus.Processing:
       return 'Processing...';
-    case 'completed':
+    case ExportJobStatus.Completed:
       return `Ready • ${job.rowCount ?? 0} rows • click to download`;
-    case 'failed':
+    case ExportJobStatus.Failed:
       return `Failed: ${job.errorMessage ?? 'Unknown error'}`;
     default:
       return '';

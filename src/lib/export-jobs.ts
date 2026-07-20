@@ -3,8 +3,9 @@ import os from 'node:os';
 import path from 'node:path';
 import { pool } from './db';
 import { streamCalculatedCsvToFile, type ReportFilters } from './product-health';
+import { ExportJobStatus } from './export-job-status';
 
-export type ExportJobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export { ExportJobStatus };
 
 export type ExportJob = {
   id: number;
@@ -35,8 +36,8 @@ const JOB_COLUMNS = `
 
 export async function createExportJob(filters: ReportFilters): Promise<ExportJob> {
   const result = await pool.query<ExportJob>(
-    `INSERT INTO export_jobs (status, filters) VALUES ('pending', $1) RETURNING ${JOB_COLUMNS}`,
-    [JSON.stringify(filters)]
+    `INSERT INTO export_jobs (status, filters) VALUES ($1, $2) RETURNING ${JOB_COLUMNS}`,
+    [ExportJobStatus.Pending, JSON.stringify(filters)]
   );
   return result.rows[0];
 }
@@ -74,25 +75,25 @@ export async function runExportJob(job: ExportJob): Promise<void> {
   const fileName = `product-health-calculated-${job.filters.startDate}-to-${job.filters.endDate}.csv`;
 
   await pool.query(
-    `UPDATE export_jobs SET status = 'processing', updated_at = now() WHERE id = $1`,
-    [job.id]
+    `UPDATE export_jobs SET status = $2, updated_at = now() WHERE id = $1`,
+    [job.id, ExportJobStatus.Processing]
   );
 
   try {
     const rowCount = await streamCalculatedCsvToFile(job.filters, filePath);
     await pool.query(
       `UPDATE export_jobs
-       SET status = 'completed', file_name = $2, row_count = $3, updated_at = now(), completed_at = now()
+       SET status = $2, file_name = $3, row_count = $4, updated_at = now(), completed_at = now()
        WHERE id = $1`,
-      [job.id, fileName, rowCount]
+      [job.id, ExportJobStatus.Completed, fileName, rowCount]
     );
   } catch (error) {
     await fs.promises.rm(filePath, { force: true });
     await pool.query(
       `UPDATE export_jobs
-       SET status = 'failed', error_message = $2, updated_at = now(), completed_at = now()
+       SET status = $2, error_message = $3, updated_at = now(), completed_at = now()
        WHERE id = $1`,
-      [job.id, error instanceof Error ? error.message : 'Export failed']
+      [job.id, ExportJobStatus.Failed, error instanceof Error ? error.message : 'Export failed']
     );
   }
 }

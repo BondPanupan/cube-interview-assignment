@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { Readable } from 'node:stream';
 import { NextResponse } from 'next/server';
-import { getExportJob, getExportJobFilePath } from '@/lib/export-jobs';
+import { ExportJobStatus, getExportJob, getExportJobFilePath } from '@/lib/export-jobs';
 
 export async function GET(
   _req: Request,
@@ -19,7 +19,7 @@ export async function GET(
     return NextResponse.json({ message: 'Job not found' }, { status: 404 });
   }
 
-  if (job.status !== 'completed' || !job.fileName) {
+  if (job.status !== ExportJobStatus.Completed || !job.fileName) {
     return NextResponse.json(
       { message: `Export is not ready (status: ${job.status})` },
       { status: 409 }
