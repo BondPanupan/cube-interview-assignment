@@ -5,6 +5,8 @@ services:
     environment:
       DATABASE_URL: postgres://postgres:postgres@db:5432/product_health_take_home
       NODE_OPTIONS: --max-old-space-size=256
+      WATCHPACK_POLLING: 'true'
+      CHOKIDAR_USEPOLLING: 'true'
     ports:
       - '3000:3000'
     mem_limit: 512m

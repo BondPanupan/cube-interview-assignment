@@ -1,5 +1,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { ProductRow, ReportFilters } from '@/lib/product-health';
+import { fetchExport } from '@/lib/product-health/export';
+import { fetchReport } from '@/lib/product-health/report';
 
 const initialFilters: ReportFilters = {
   startDate: '2026-01-05',
@@ -27,27 +29,36 @@ export default function Home() {
     setLoading(true);
     setError('');
 
-    const response = await fetch(
-      `/api/product-health/report?${new URLSearchParams(cleanFilters(nextFilters))}`
-    );
-    const body = await response.json();
+    try {
+      const query = new URLSearchParams(cleanFilters(nextFilters)).toString();
+      const response = await fetchReport(query);
+      if (!response) {
+        setError('Report failed');
+        setLoading(false);
+        return;
+      }
+      setRows(response.rows);
+      setTotal(response.total);
 
-    if (!response.ok) {
-      setError(body.message ?? 'Report failed');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Report failed');
+    } finally {
       setLoading(false);
-      return;
     }
-
-    setRows(body.rows);
-    setTotal(body.total);
-    setLoading(false);
   }
 
   async function requestExport() {
     setError('');
     setExporting(true);
-    window.location.href = `/api/product-health/export?${query}`;
-    window.setTimeout(() => setExporting(false), 1500);
+
+    try {
+      await fetchExport(query);
+      console.log('export is done...')
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Export failed');
+    } finally {
+      setExporting(false);
+    }
   }
 
   function submit(event: FormEvent) {
