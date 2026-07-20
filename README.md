@@ -79,3 +79,36 @@ Write `ARCHITECTURE.md` for the whole system, using [SYSTEM_CONTEXT.md](./SYSTEM
 ## AI Usage
 
 AI is allowed. Explain what you used it for and what you manually reviewed.
+
+<br/><br/>
+
+# Changes Made
+
+## Task 1
+  - [ `DONE` ] Make the app survive a full-dataset export attempt.
+  - [ `DONE` ] The full export does not need to complete. It must not take down the app completely.
+  - [ `DONE` ] Smaller filtered exports should still work.
+  - [ `DONE` ] Extra credit: make full dataset export complete, or explain how you would do it safely.
+
+## Task 2
+  - [ `DONE` ] Write `ARCHITECTURE.md` for the whole system using `SYSTEM_CONTEXT.md`.
+
+## Deliverables
+### explaining what you did, why, and how you verified it: `บันทึกใน README อธิบายว่าคุณทำอะไร ทำไม และตรวจสอบยืนยันผลลัพธ์อย่างไร`
+### Explain what I did step by step.
+  - forked from Card-Nattanon-Card-Card-Card-Card-Card/cube-interview-assignment
+  - clone the repository
+  - read: `README.md`, `SYSTEM_CONTEXT.md`, `CANDIDATE_BRIEF.md`
+    - Understand the documents received.
+  - Configure and install the repository on a Docker container, configuring it according to the markdown file.
+  - Try to open frontend 
+  - Try clicking on everything on the webpage to understand the features I have.(include report/export)
+  - Explore the entire structure of the application.
+    - file structure, database design, application design, components of applicaiton, api,
+  - reproduced the problem make it crash/restart the app container
+  - Analyze and find solutions.
+  - fix(project structure): separate the api of application, Manage the structure of module and domain
+  - new feature export: CSV Stream + Cursor Pagination + Batch 1000 and Background Job
+  - refactor export: back export job status with a Postgres + TS enum
+  - refactor export: share type helper function and app structure
+  - add ARCHITECTURE.md
