@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { parseFilters } from '@/lib/product-health';
-import { createExportJob, runExportJob } from '@/lib/export-jobs';
+import { createExportJob, runExportJob } from '@/lib/export-jobs/export-jobs';
 
 export async function POST(req: NextRequest) {
   try {

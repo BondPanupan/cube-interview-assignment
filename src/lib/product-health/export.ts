@@ -1,4 +1,4 @@
-import type { ExportJob } from '@/lib/export-jobs';
+import type { ExportJob } from '@/lib/export-jobs/export-jobs';
 
 export async function createExportJob(queryParams: string): Promise<ExportJob> {
   const res = await fetch(`/api/product-health/export?${queryParams}`, {

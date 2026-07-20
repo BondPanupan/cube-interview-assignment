@@ -1,26 +1,21 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { pool } from './db';
-import { streamCalculatedCsvToFile, type ReportFilters } from './product-health';
-import { ExportJobStatus } from './export-job-status';
+import { pool } from '../db';
+import { streamCalculatedCsvToFile, type ReportFilters } from '../product-health';
+import { ExportJobStatus } from '../enum/export-job-status';
+import { getExportJobFilePath as resolveExportJobFilePath } from './helpers/get-export-job-file-path';
+import { ExportJob } from './type/export-job.type';
 
 export { ExportJobStatus };
-
-export type ExportJob = {
-  id: number;
-  status: ExportJobStatus;
-  filters: ReportFilters;
-  fileName: string | null;
-  rowCount: number | null;
-  errorMessage: string | null;
-  createdAt: string;
-  updatedAt: string;
-  completedAt: string | null;
-};
+export type { ExportJob } from './type/export-job.type';
 
 const EXPORT_DIR =
   process.env.EXPORT_DIR ?? path.join(os.tmpdir(), 'product-health-exports');
+
+export function getExportJobFilePath(jobId: number): string {
+  return resolveExportJobFilePath(jobId, EXPORT_DIR);
+}
 
 const JOB_COLUMNS = `
   id,
@@ -56,10 +51,6 @@ export async function getExportJob(id: number): Promise<ExportJob | null> {
     [id]
   );
   return result.rows[0] ?? null;
-}
-
-export function getExportJobFilePath(jobId: number): string {
-  return path.join(EXPORT_DIR, `${jobId}.csv`);
 }
 
 /**

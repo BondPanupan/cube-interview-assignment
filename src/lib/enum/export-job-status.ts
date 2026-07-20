@@ -4,8 +4,8 @@
  * import the enum values without pulling in the Node-only db pool.
  */
 export enum ExportJobStatus {
-  Pending = 'pending',
+  Pending    = 'pending',
   Processing = 'processing',
-  Completed = 'completed',
-  Failed = 'failed',
+  Completed  = 'completed',
+  Failed     = 'failed',
 }

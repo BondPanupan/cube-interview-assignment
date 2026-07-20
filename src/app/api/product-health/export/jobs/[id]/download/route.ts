@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import { Readable } from 'node:stream';
 import { NextResponse } from 'next/server';
-import { ExportJobStatus, getExportJob, getExportJobFilePath } from '@/lib/export-jobs';
+import { ExportJobStatus, getExportJob, getExportJobFilePath } from '@/lib/export-jobs/export-jobs';
 
 export async function GET(
   _req: Request,

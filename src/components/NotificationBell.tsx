@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
-import type { ExportJob } from '@/lib/export-jobs';
-import { ExportJobStatus } from '@/lib/export-job-status';
+import type { ExportJob } from '@/lib/export-jobs/export-jobs';
+import { ExportJobStatus } from '@/lib/enum/export-job-status';
 import { downloadExportJob } from '@/lib/product-health/export';
 
 type Props = {

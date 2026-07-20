@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { ExportJob } from '@/lib/export-jobs';
+import type { ExportJob } from '@/lib/export-jobs/export-jobs';
 import { fetchExportJobs } from '@/lib/product-health/export';
 
 const POLL_INTERVAL_MS = 3000;
