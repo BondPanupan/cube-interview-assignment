@@ -1,21 +1,35 @@
-export async function fetchExport(queryParams: string): Promise<void> {
-  const res = await fetch(`/api/product-health/export?${queryParams}`);
+import type { ExportJob } from '@/lib/export-jobs';
+
+export async function createExportJob(queryParams: string): Promise<ExportJob> {
+  const res = await fetch(`/api/product-health/export?${queryParams}`, {
+    method: 'POST',
+  });
+  const body = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    const body = await res.json().catch(() => ({}));
     throw new Error(body.message ?? 'Export failed');
   }
 
-  const disposition = res.headers.get('content-disposition') ?? '';
-  const fileName = disposition.match(/filename="([^"]+)"/)?.[1] ?? 'export.csv';
+  return body.job as ExportJob;
+}
 
-  const blob = await res.blob();
-  const url = URL.createObjectURL(blob);
+export async function fetchExportJobs(): Promise<ExportJob[]> {
+  const res = await fetch('/api/product-health/export/jobs');
+  const body = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(body.message ?? 'Failed to load export notifications');
+  }
+
+  return body.jobs as ExportJob[];
+}
+
+export function downloadExportJob(job: ExportJob): void {
+  const url = `/api/product-health/export/jobs/${job.id}/download`;
   const link = document.createElement('a');
   link.href = url;
-  link.download = fileName;
+  if (job.fileName) link.download = job.fileName;
   document.body.appendChild(link);
   link.click();
   link.remove();
-  URL.revokeObjectURL(url);
 }

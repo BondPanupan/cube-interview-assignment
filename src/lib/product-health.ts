@@ -1,5 +1,9 @@
+import fs from 'node:fs';
+import { once } from 'node:events';
 import { pool } from './db';
 import { toCsv, type CsvRow } from './csv';
+
+const EXPORT_BATCH_SIZE = 1000;
 
 export type ReportFilters = {
   startDate: string;
@@ -179,74 +183,114 @@ export async function getReport(filters: ReportFilters): Promise<ReportResult> {
   };
 }
 
-export async function exportCalculatedCsv(filters: ReportFilters): Promise<{
-  fileName: string;
-  content: string;
-}> {
-  const rows = await getRawObservations(filters);
-  const rawRows = rows.map((row) => ({
-    productName: row.productName,
-    skuId: row.skuId,
-    country: row.country,
-    channel: row.channel,
-    shopName: row.shopName,
-    brandName: row.brandName,
-    listingUrl: row.listingUrl,
-    categoryL2: row.categoryL2,
-    categoryL3: row.categoryL3,
-    inStock: row.inStock,
-    price: row.price,
-    competitorMedianPrice: row.competitorMedianPrice,
-    rating: row.rating,
-    reviewCount: row.reviewCount,
-    contentScore: row.contentScore,
-    rawSnapshot: row.rawSnapshot,
-    diagnosticPayload: `${row.rawSnapshot};calculation_context=${row.skuId}:${row.channel}:${row.price}:${row.rating}`,
-  }));
-  const report = calculateProductHealth(rows);
-  const summaryCsv = toCsv(report as CsvRow[]);
-  const rawCsv = toCsv(rawRows as CsvRow[]);
-
-  return {
-    fileName: `product-health-calculated-${filters.startDate}-to-${filters.endDate}.csv`,
-    content: `${summaryCsv}\n\n# Raw observations\n${rawCsv}`,
-  };
-}
-
-async function getRawObservations(
-  filters: ReportFilters
-): Promise<Observation[]> {
+/**
+ * Streams raw observations from Postgres in fixed-size batches (keyset
+ * pagination on `id`, never OFFSET) and writes CSV rows to disk as each
+ * batch arrives. Memory is bounded by one batch (EXPORT_BATCH_SIZE rows)
+ * plus a per-product aggregation map, instead of the full result set.
+ * Returns the number of raw observation rows written.
+ */
+export async function streamCalculatedCsvToFile(
+  filters: ReportFilters,
+  filePath: string
+): Promise<number> {
   const where = buildWhere(filters);
-  const query = `
-    SELECT
-      product_name AS "productName",
-      sku_id AS "skuId",
-      country,
-      channel,
-      shop_name AS "shopName",
-      brand_name AS "brandName",
-      listing_url AS "listingUrl",
-      category_l2 AS "categoryL2",
-      category_l3 AS "categoryL3",
-      in_stock AS "inStock",
-      price::float AS price,
-      competitor_median_price::float AS "competitorMedianPrice",
-      rating::float AS rating,
-      review_count AS "reviewCount",
-      content_score AS "contentScore",
-      raw_snapshot AS "rawSnapshot"
-    FROM product_observations
-    WHERE ${where.sql}
-    ORDER BY sku_id, channel, observed_at
-  `;
+  const accumulator = new Map<string, ProductAccumulator>();
+  const writeStream = fs.createWriteStream(filePath);
 
-  const result = await pool.query<Observation>(query, where.values);
-  return result.rows;
+  let cursor = 0;
+  let rowCount = 0;
+  let headerWritten = false;
+
+  const write = async (chunk: string) => {
+    if (!writeStream.write(chunk)) {
+      await once(writeStream, 'drain');
+    }
+  };
+
+  try {
+    while (true) {
+      const values = [...where.values, cursor, EXPORT_BATCH_SIZE];
+      const cursorParam = values.length - 1;
+      const limitParam = values.length;
+      const query = `
+        SELECT
+          id,
+          product_name AS "productName",
+          sku_id AS "skuId",
+          country,
+          channel,
+          shop_name AS "shopName",
+          brand_name AS "brandName",
+          listing_url AS "listingUrl",
+          category_l2 AS "categoryL2",
+          category_l3 AS "categoryL3",
+          in_stock AS "inStock",
+          price::float AS price,
+          competitor_median_price::float AS "competitorMedianPrice",
+          rating::float AS rating,
+          review_count AS "reviewCount",
+          content_score AS "contentScore",
+          raw_snapshot AS "rawSnapshot"
+        FROM product_observations
+        WHERE ${where.sql} AND id > $${cursorParam}
+        ORDER BY id
+        LIMIT $${limitParam}
+      `;
+
+      const result = await pool.query<Observation & { id: number }>(
+        query,
+        values
+      );
+      if (result.rows.length === 0) break;
+
+      const rawRows = result.rows.map((row) => ({
+        productName: row.productName,
+        skuId: row.skuId,
+        country: row.country,
+        channel: row.channel,
+        shopName: row.shopName,
+        brandName: row.brandName,
+        listingUrl: row.listingUrl,
+        categoryL2: row.categoryL2,
+        categoryL3: row.categoryL3,
+        inStock: row.inStock,
+        price: row.price,
+        competitorMedianPrice: row.competitorMedianPrice,
+        rating: row.rating,
+        reviewCount: row.reviewCount,
+        contentScore: row.contentScore,
+        rawSnapshot: row.rawSnapshot,
+        diagnosticPayload: `${row.rawSnapshot};calculation_context=${row.skuId}:${row.channel}:${row.price}:${row.rating}`,
+      }));
+
+      accumulateProductHealth(accumulator, result.rows);
+
+      await write(toCsv(rawRows as CsvRow[], { header: !headerWritten }) + '\n');
+      headerWritten = true;
+
+      rowCount += result.rows.length;
+      cursor = result.rows[result.rows.length - 1].id;
+    }
+
+    const summaryRows = finalizeProductHealth(accumulator);
+    await write('\n# Summary (calculated health scores)\n');
+    await write(toCsv(summaryRows as CsvRow[]));
+
+    writeStream.end();
+    await once(writeStream, 'finish');
+  } catch (error) {
+    writeStream.destroy();
+    throw error;
+  }
+
+  return rowCount;
 }
 
-function calculateProductHealth(rows: Observation[]): ProductRow[] {
-  const byProduct = new Map<string, ProductAccumulator>();
-
+function accumulateProductHealth(
+  byProduct: Map<string, ProductAccumulator>,
+  rows: Observation[]
+): void {
   for (const row of rows) {
     const key = `${row.skuId}:${row.channel}`;
     const current =
@@ -278,7 +322,11 @@ function calculateProductHealth(rows: Observation[]): ProductRow[] {
     current.contentScoreTotal += row.contentScore;
     byProduct.set(key, current);
   }
+}
 
+function finalizeProductHealth(
+  byProduct: Map<string, ProductAccumulator>
+): ProductRow[] {
   return [...byProduct.values()].map((row) => {
     const inStockRate = round((row.inStockCount / row.observations) * 100, 1);
     const averagePrice = round(row.priceTotal / row.observations, 2);

@@ -1,7 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import type { ProductRow, ReportFilters } from '@/lib/product-health';
-import { fetchExport } from '@/lib/product-health/export';
+import { createExportJob } from '@/lib/product-health/export';
 import { fetchReport } from '@/lib/product-health/report';
+import { NotificationBell } from '@/components/NotificationBell';
+import { useExportJobs } from '@/hooks/useExportJobs';
 
 const initialFilters: ReportFilters = {
   startDate: '2026-01-05',
@@ -19,6 +21,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [exporting, setExporting] = useState(false);
+  const { jobs, refresh: refreshJobs } = useExportJobs();
 
   const query = useMemo(
     () => new URLSearchParams(cleanFilters(filters)).toString(),
@@ -52,8 +55,8 @@ export default function Home() {
     setExporting(true);
 
     try {
-      await fetchExport(query);
-      console.log('export is done...')
+      await createExportJob(query);
+      await refreshJobs();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Export failed');
     } finally {
@@ -77,9 +80,12 @@ export default function Home() {
           <p className="eyebrow">Digital Shelf</p>
           <h1>Product Health</h1>
         </div>
-        <button onClick={requestExport} disabled={exporting}>
-          {exporting ? 'Preparing...' : 'Export Selected Filters'}
-        </button>
+        <div className="headerActions">
+          <NotificationBell jobs={jobs} />
+          <button onClick={requestExport} disabled={exporting}>
+            {exporting ? 'Starting...' : 'Export Selected Filters'}
+          </button>
+        </div>
       </section>
 
       <form className="filters" onSubmit={submit}>

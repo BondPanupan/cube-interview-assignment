@@ -6,16 +6,15 @@ function escapeCsv(value: string | number | boolean | null): string {
   return /[",\n]/.test(text) ? `"${text.replaceAll('"', '""')}"` : text;
 }
 
-export function toCsv(rows: CsvRow[]): string {
+export function toCsv(rows: CsvRow[], options?: { header?: boolean }): string {
   if (rows.length === 0) return '';
 
   const headers = Object.keys(rows[0]);
-  const lines = [
-    headers.join(','),
-    ...rows.map((row) =>
-      headers.map((header) => escapeCsv(row[header])).join(',')
-    ),
-  ];
+  const body = rows.map((row) =>
+    headers.map((header) => escapeCsv(row[header])).join(',')
+  );
 
-  return lines.join('\n');
+  if (options?.header === false) return body.join('\n');
+
+  return [headers.join(','), ...body].join('\n');
 }

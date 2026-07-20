@@ -160,6 +160,144 @@ td small {
   margin-top: 4px;
 }
 
+.headerActions {
+  align-items: center;
+  display: flex;
+  gap: 12px;
+}
+
+.notif {
+  position: relative;
+}
+
+.notif-bell {
+  background: white;
+  border: 1px solid #d9dee8;
+  color: #18212f;
+  position: relative;
+}
+
+.notif-badge {
+  align-items: center;
+  background: #d92d20;
+  border-radius: 999px;
+  color: white;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 700;
+  height: 18px;
+  justify-content: center;
+  margin-left: 8px;
+  min-width: 18px;
+  padding: 0 5px;
+}
+
+.notif-overlay {
+  align-items: flex-start;
+  background: rgba(16, 24, 40, 0.45);
+  bottom: 0;
+  display: flex;
+  justify-content: flex-end;
+  left: 0;
+  padding: 84px 20px;
+  position: fixed;
+  right: 0;
+  top: 0;
+  z-index: 20;
+}
+
+.notif-modal {
+  background: white;
+  border: 1px solid #d9dee8;
+  border-radius: 10px;
+  box-shadow: 0 20px 40px rgba(16, 24, 40, 0.18);
+  max-height: 70vh;
+  overflow-y: auto;
+  width: 360px;
+}
+
+.notif-modal-header {
+  align-items: center;
+  border-bottom: 1px solid #e7ebf0;
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 16px;
+  position: sticky;
+  top: 0;
+  background: white;
+}
+
+.notif-modal-header h2 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.notif-modal-header button {
+  background: #f0f3f8;
+  color: #475467;
+  min-height: 30px;
+  padding: 0 10px;
+}
+
+.notif-empty {
+  color: #667085;
+  font-size: 14px;
+  padding: 20px 16px;
+}
+
+.notif-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.notif-item + .notif-item {
+  border-top: 1px solid #e7ebf0;
+}
+
+.notif-item-button {
+  background: white;
+  border-radius: 0;
+  color: #18212f;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  height: auto;
+  min-height: 0;
+  padding: 12px 16px;
+  text-align: left;
+  width: 100%;
+}
+
+.notif-item-button:not(:disabled):hover {
+  background: #f6f7f9;
+}
+
+.notif-item-button:disabled {
+  cursor: default;
+  opacity: 1;
+}
+
+.notif-item-title {
+  font-size: 13px;
+  font-weight: 600;
+  word-break: break-all;
+}
+
+.notif-item-meta {
+  color: #667085;
+  font-size: 12px;
+}
+
+.notif-item-failed .notif-item-meta {
+  color: #a8071a;
+}
+
+.notif-item-completed .notif-item-meta {
+  color: #067647;
+}
+
 @media (max-width: 720px) {
   .header,
   .summary {

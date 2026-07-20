@@ -1,20 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { exportCalculatedCsv, parseFilters } from '@/lib/product-health';
+import { parseFilters } from '@/lib/product-health';
+import { createExportJob, runExportJob } from '@/lib/export-jobs';
 
-export async function GET(req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
     const filters = parseFilters(
       Object.fromEntries(req.nextUrl.searchParams)
     );
-    const exportFile = await exportCalculatedCsv(filters);
+    const job = await createExportJob(filters);
 
-    return new NextResponse(exportFile.content, {
-      status: 200,
-      headers: {
-        'content-type': 'text/csv',
-        'content-disposition': `attachment; filename="${exportFile.fileName}"`,
-      },
-    });
+    // Fire and forget: the export streams to disk in batches off the
+    // request path so this response returns immediately regardless of
+    // dataset size.
+    void runExportJob(job);
+
+    return NextResponse.json({ job }, { status: 202 });
   } catch (error) {
     return NextResponse.json(
       { message: error instanceof Error ? error.message : 'Export failed' },
